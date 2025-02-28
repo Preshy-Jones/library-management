@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  frontend_db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${FRONTEND_DB_NAME}
+      MYSQL_USER: ${FRONTEND_DB_USER}
+      MYSQL_PASSWORD: ${FRONTEND_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${FRONTEND_DB_ROOT_PASSWORD}
+    volumes:
+      - frontend_db_data:/var/lib/mysql
+
+  admin_db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${ADMIN_DB_NAME}
+      MYSQL_USER: ${ADMIN_DB_USER}
+      MYSQL_PASSWORD: ${ADMIN_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${ADMIN_DB_ROOT_PASSWORD}
+    volumes:
+      - admin_db_data:/var/lib/mysql
+
+  frontend_api:
+    build: ./frontend_api
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./frontend_api:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - frontend_db
+      - kafka
+
+  admin_api:
+    build: ./admin_api
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./admin_api:/app
+    ports:
+      - "8001:8001"
+    depends_on:
+      - admin_db
+      - kafka
+
+volumes:
+  frontend_db_data:
+  admin_db_data:
