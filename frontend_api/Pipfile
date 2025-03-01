@@ -4,12 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-django = "*"
 djangorestframework = "*"
+django-filter = "*"
+gunicorn = "*"
+python-dotenv = "*"
+django = "*"
 mysqlclient = "*"
 kafka-python = "*"
 
 [dev-packages]
+pytest = "*"
+pytest-django = "*"
 
 [requires]
 python_version = "3.13"

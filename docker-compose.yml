@@ -1,70 +1,56 @@
-version: '3.8'
+version: '3'
 
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+    image: confluentinc/cp-zookeeper:7.0.1
     ports:
       - "2181:2181"
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.0.1
     depends_on:
       - zookeeper
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  frontend_db:
+  admin-db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: ${FRONTEND_DB_NAME}
-      MYSQL_USER: ${FRONTEND_DB_USER}
-      MYSQL_PASSWORD: ${FRONTEND_DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${FRONTEND_DB_ROOT_PASSWORD}
-    volumes:
-      - frontend_db_data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: adminpass
+      MYSQL_DATABASE: admindb
+    ports:
+      - "3306:3306"
 
-  admin_db:
+  frontend-db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: ${ADMIN_DB_NAME}
-      MYSQL_USER: ${ADMIN_DB_USER}
-      MYSQL_PASSWORD: ${ADMIN_DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${ADMIN_DB_ROOT_PASSWORD}
-    volumes:
-      - admin_db_data:/var/lib/mysql
+      MYSQL_ROOT_PASSWORD: frontendpass
+      MYSQL_DATABASE: frontenddb
+    ports:
+      - "3307:3306"
 
-  frontend_api:
-    build: ./frontend_api
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./frontend_api:/app
+  admin-api:
+    build: ./admin
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DB_HOST: admin-db
     ports:
       - "8000:8000"
     depends_on:
-      - frontend_db
+      - admin-db
       - kafka
 
-  admin_api:
-    build: ./admin_api
-    command: python manage.py runserver 0.0.0.0:8001
-    volumes:
-      - ./admin_api:/app
+  frontend-api:
+    build: ./frontend
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8001"
+    environment:
+      DB_HOST: frontend-db
     ports:
       - "8001:8001"
     depends_on:
-      - admin_db
+      - frontend-db
       - kafka
-
-volumes:
-  frontend_db_data:
-  admin_db_data:
