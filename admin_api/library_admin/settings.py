@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'books'
+    'books.apps.BooksConfig', 
+    
 ]
 
 MIDDLEWARE = [
@@ -77,16 +78,15 @@ WSGI_APPLICATION = 'library_admin.wsgi.application'
 
 
 DATABASES = {
-     'default': {
+    'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'adminapp-db',
+        'NAME': 'admindb',
         'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'PASSWORD': 'adminpass',
+        'HOST': 'admin-db',
         'PORT': '3306',
     }
 }
-
 
 
 # Password validation

@@ -1,56 +1,116 @@
-version: '3'
+version: '3.8'
 
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.0.1
+    image: confluentinc/cp-zookeeper:7.3.2
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD-SHELL", "echo srvr | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
     ports:
       - "2181:2181"
 
   kafka:
-    image: confluentinc/cp-kafka:7.0.1
+    image: confluentinc/cp-kafka:7.3.2
     depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
+      zookeeper:
+        condition: service_healthy
     environment:
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    ports:
+      - "9092:9092"
 
   admin-db:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: adminpass
       MYSQL_DATABASE: admindb
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "3306:3306"
+    volumes:
+      - admin-db-data:/var/lib/mysql
 
   frontend-db:
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: frontendpass
       MYSQL_DATABASE: frontenddb
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "3307:3306"
+    volumes:
+      - frontend-db-data:/var/lib/mysql
 
   admin-api:
     build: ./admin_api
-    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: >
+      bash -c "python manage.py wait_for_kafka &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8000"
     environment:
       DB_HOST: admin-db
+      DB_NAME: admindb
+      DB_USER: root
+      DB_PASSWORD: adminpass
     ports:
       - "8000:8000"
     depends_on:
-      - admin-db
-      - kafka
+      zookeeper:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      admin-db:
+        condition: service_healthy
 
   frontend-api:
     build: ./frontend_api
-    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8001"
+    command: >
+      bash -c "python manage.py wait_for_kafka &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:8001"
     environment:
       DB_HOST: frontend-db
+      DB_NAME: frontenddb
+      DB_USER: root
+      DB_PASSWORD: frontendpass
     ports:
       - "8001:8001"
     depends_on:
-      - frontend-db
-      - kafka
+      zookeeper:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      frontend-db:
+        condition: service_healthy
+
+volumes:
+  admin-db-data:
+  frontend-db-data:
+
+networks:
+  default:
+    driver: bridge

@@ -9,8 +9,8 @@ django-filter = "*"
 gunicorn = "*"
 python-dotenv = "*"
 django = "*"
-mysqlclient = "*"
 kafka-python = "*"
+mysqlclient = "*"
 
 [dev-packages]
 pytest = "*"

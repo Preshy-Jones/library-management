@@ -4,13 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-djangorestframework = "*"
 django-filter = "*"
 gunicorn = "*"
 python-dotenv = "*"
 django = "*"
 mysqlclient = "*"
 kafka-python = "*"
+djangorestframework = "*"
 
 [dev-packages]
 pytest = "*"
