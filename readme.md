@@ -121,6 +121,24 @@ To stop and remove all data (including databases):
   docker-compose down -v
   ```
 
+
+
+## API Documentation
+
+### Admin API (http://localhost:8000/admin/)
+
+- **GET /books/** - List all books
+- **POST /books/** - Add a new book
+- **DELETE /books/{id}/** - Remove a book
+- **GET /users/** - List enrolled users
+- **GET /borrows/** - List borrow records
+
+### Frontend API (http://localhost:8001/api/)
+
+- **POST /enroll/** - Enroll a new user
+- **GET /books/** - List available books
+- **POST /borrow/** - Borrow a book
+
 ### Troubleshooting
 
 #### Common Issues
