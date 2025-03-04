@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from kafka import KafkaConsumer
 import json
-from admin.models import Borrow, User, Book
+from books.models import Borrow, User, Book
 from django.utils.dateparse import parse_date
 
 class Command(BaseCommand):

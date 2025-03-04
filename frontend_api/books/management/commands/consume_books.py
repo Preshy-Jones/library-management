@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from kafka import KafkaConsumer
 import json
-from frontend.models import Book
+from books.models import Book
 
 class Command(BaseCommand):
     help = 'Consumes book events from Kafka'
